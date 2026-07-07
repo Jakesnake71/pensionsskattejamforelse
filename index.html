@@ -214,6 +214,18 @@
     </div>
 
     <div class="card">
+      <h2>Utbetalning år för år</h2>
+      <p class="sub">Nettobelopp per år från respektive pensions startålder. Visar hur inkomsten ändras när olika pensioner börjar och slutar betalas ut.</p>
+      <div class="radios" id="yearperiod" style="max-width:320px;margin-bottom:14px">
+        <label data-v="5"><input type="radio" name="yearperiod" value="5">5 år</label>
+        <label data-v="10"><input type="radio" name="yearperiod" value="10">10 år</label>
+        <label data-v="20" class="on"><input type="radio" name="yearperiod" value="20" checked>20 år</label>
+      </div>
+      <div style="overflow-x:auto"><table id="yeartable"><thead id="yearhead"></thead><tbody id="yearrows"></tbody></table></div>
+      <p class="note">Bruttobeloppet är summan av de pensioner som betalas ut just det året, utifrån vald uttagsperiod. Nettot är efter skatt och, utanför EU/EES, sjukförsäkring.</p>
+    </div>
+
+    <div class="card">
       <h2>Nettobelopp per månad över uttagsperiod</h2>
       <p class="sub">Hur nettobeloppet per månad förändras när samma kapital tas ut över olika lång tid. Lodräta linjer markerar 5, 10 och 20 år.</p>
       <div id="chart"></div>
@@ -346,6 +358,37 @@
     document.querySelectorAll('#civil label').forEach(x => x.classList.remove('on'));
     l.classList.add('on'); l.querySelector('input').checked = true;
   }));
+
+  // År-för-år-vy: uppdateras när uttagsperiod väljs
+  let lastCtx = null;
+  function renderYearly() {
+    if (!lastCtx) return;
+    const { pensions, married, chosen, g } = lastCtx;
+    const years = parseInt(document.querySelector('input[name=yearperiod]:checked').value);
+    const active = pensions.filter(p => p.amt > 0);
+    const head = document.getElementById('yearhead'), body = document.getElementById('yearrows');
+    if (!active.length) { head.innerHTML = ''; body.innerHTML = ''; return; }
+    active.forEach(p => { p._a = annuity(p.amt, years, g); });
+    const lands = ["Sverige", ...chosen];
+    const startMin = Math.min(...active.map(p => p.start));
+    const endMax = Math.max(...active.map(p => p.start + years));
+    head.innerHTML = '<tr><th>Ålder</th><th>Brutto/år</th>' + lands.map(c => `<th>${c}</th>`).join('') + '</tr>';
+    let rows = '';
+    for (let t = startMin; t < endMax; t++){
+      const activeNow = active.filter(p => t >= p.start && t < p.start + years);
+      const gross = activeNow.reduce((s, p) => s + p._a, 0);
+      if (gross <= 0) continue;
+      const nets = lands.map(c => (gross - yearTax(c, activeNow, married) - RULES[c].ins));
+      const best = Math.max(...nets);
+      const cells = nets.map(n => `<td class="${Math.abs(n - best) < 1 ? 'best' : ''}">${fmt(n)}</td>`).join('');
+      rows += `<tr><td class="flag">${t} år</td><td>${fmt(gross)}</td>${cells}</tr>`;
+    }
+    body.innerHTML = rows;
+  }
+  document.querySelectorAll('#yearperiod label').forEach(l => l.addEventListener('click', () => {
+    document.querySelectorAll('#yearperiod label').forEach(x => x.classList.remove('on'));
+    l.classList.add('on'); l.querySelector('input').checked = true; renderYearly();
+  }));
   document.querySelectorAll('#countries label').forEach(l => l.addEventListener('click', e => {
     if (e.target.tagName !== 'INPUT') { const cb = l.querySelector('input'); cb.checked = !cb.checked; }
     l.classList.toggle('on', l.querySelector('input').checked);
@@ -460,6 +503,8 @@
 
     document.getElementById('cypernnote').classList.toggle('hidden', !chosen.includes('Cypern'));
 
+    lastCtx = { pensions, married, chosen, g };
+    renderYearly();
     renderChart(pensions, married, chosen, g);
 
     document.getElementById('view-input').classList.add('hidden');
