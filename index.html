@@ -194,6 +194,9 @@
   <!-- VY 2: RESULTAT -->
   <div id="view-result" class="hidden">
     <div id="agewarn" class="warn hidden" style="margin-bottom:16px"></div>
+    <div id="cypernnote" class="warn hidden" style="margin-bottom:16px;background:#fff8e6;border-color:#ecdcb4;color:#7a6520">
+      <strong>Cypern, osäkerhet i tolkningen:</strong> beräkningen följer skatteavtalets huvudregel att privat tjänstepension och privat pension beskattas i Cypern. Skatterättsnämnden har dock i enskilda fall bedömt att Sverige som källstat får beskatta svensk privat pension. Stäm av med Skatteverket för ditt specifika fall.
+    </div>
     <blockquote class="disclaimer">
       <strong>Observera.</strong> Översiktlig uppskattning som beslutsstöd, inte skatterådgivning. Skatteskalorna bygger på 2025 års satser och är förenklade (grundavdrag och avdrag är schabloner, solidaritetstillägg utelämnas). Belopp i euro och baht räknas om med EUR ca 11,04 och THB ca 0,29 kr. Sverige avser kvarboende pensionär. Flyttar man ut och tar ut pensionen som begränsat skattskyldig gäller i stället SINK, 22,5 procent. Italien avser den särskilda 7-procentsregeln för utländska pensionärer som flyttar till mindre orter i södra Italien (tidsbegränsad). Utbetalningen modelleras som en annuitet, där kvarvarande kapital växer med angiven värdeutveckling, vilket gör att totalt utbetalt belopp överstiger det inmatade kapitalet. Skatteavtalens beskattningsrätt tillämpas per pensionstyp: offentlig tjänstepension beskattas i Sverige (SINK), och pensioner som får beskattas i båda länderna hanteras med avräkning. Denna fördelning är en förenkling som måste stämmas av mot avtalstexten i det enskilda fallet. Alla värden ska verifieras mot respektive lands regler.
     </blockquote>
@@ -454,6 +457,8 @@
       }).join('');
       return `<tr${isSE ? ' style="background:#f2fbf9"' : ''}><td class="flag">${c}${isSE ? ' <span class="tag" style="background:#d8f0ea;color:#1f6a5a">referens</span>' : ''}</td>${cells}</tr>`;
     }).join('');
+
+    document.getElementById('cypernnote').classList.toggle('hidden', !chosen.includes('Cypern'));
 
     renderChart(pensions, married, chosen, g);
 
