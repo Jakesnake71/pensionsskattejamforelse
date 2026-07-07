@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pensionsskattejämförelse – prototyp</title>
+<style>
+  /* Stil inspirerad av markdownguide.org (Bulma-liknande): mörk navbar, vita ytor, blå accent */
+  :root {
+    --bg: #fafafa;
+    --surface: #ffffff;
+    --text: #4a4a4a;
+    --text-dark: #363636;
+    --muted: #7a7a7a;
+    --navbar: #1f2532;
+    --primary: #3273dc;
+    --primary-dark: #2366d1;
+    --primary-soft: #eef4fd;
+    --accent: #00a58a;
+    --line: #dbdbdb;
+    --line-soft: #ededed;
+    --good: #257953;
+    --radius: 6px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+  a { color: var(--primary); text-decoration: none; }
+
+  .navbar { background: var(--navbar); color: #fff; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+  .navbar .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; color: #fff; }
+  .navbar .logo .mark { width: 26px; height: 26px; background: #fff; color: var(--navbar); border-radius: 4px; display:flex; align-items:center; justify-content:center; font-weight:800; }
+  .navbar .links { display: flex; gap: 6px; }
+  .navbar .links a { color: #cfd6e0; padding: 8px 12px; border-radius: 4px; font-size: 14.5px; }
+  .navbar .links a:hover, .navbar .links a.active { background: rgba(255,255,255,.10); color: #fff; }
+
+  .hero { background: #fff; border-bottom: 1px solid var(--line); padding: 34px 24px; }
+  .hero .inner { max-width: 960px; margin: 0 auto; }
+  .hero h1 { font-size: 30px; color: var(--text-dark); margin: 0 0 6px; font-weight: 700; }
+  .hero p { margin: 0; color: var(--muted); font-size: 15.5px; }
+
+  .wrap { max-width: 960px; margin: 0 auto; padding: 26px 24px 70px; }
+  .steps { display: flex; gap: 10px; margin-bottom: 22px; font-size: 13px; }
+  .steps .pill { display: flex; align-items: center; gap: 8px; padding: 7px 14px; background: #fff; border: 1px solid var(--line); border-radius: 40px; color: var(--muted); }
+  .steps .pill.active { border-color: var(--primary); color: var(--primary); font-weight: 700; }
+  .steps .pill b { background: var(--primary); color:#fff; width: 20px; height: 20px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size: 12px; }
+  .steps .pill.done b { background: var(--good); }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px 26px; margin-bottom: 20px; }
+  h2 { color: var(--text-dark); font-size: 20px; margin: 0 0 4px; font-weight: 700; }
+  .sub { font-size: 14px; color: var(--muted); margin: 0 0 20px; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 26px; }
+  label.fld { display: block; margin-bottom: 16px; }
+  label.fld .lab { font-size: 13.5px; font-weight: 700; color: var(--text-dark); margin-bottom: 6px; display:flex; gap:6px; align-items:baseline; }
+  label.fld .hint { font-size: 11.5px; color: var(--muted); font-weight: 400; }
+  input[type=number] { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; font-family: inherit; font-size: 15px; color: var(--text-dark); }
+  input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+  .radios { display: flex; gap: 10px; }
+  .radios label { flex:1; border: 1px solid var(--line); border-radius: 4px; padding: 10px; text-align:center; font-size: 14px; cursor: pointer; }
+  .radios input { display:none; }
+  .radios label.on { border-color: var(--primary); background: var(--primary-soft); color: var(--primary-dark); font-weight: 700; }
+  .countries { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .countries label { display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:4px; padding:10px 12px; font-size:14px; cursor:pointer; }
+  .countries label.on { border-color: var(--primary); background: var(--primary-soft); color: var(--primary-dark); font-weight:700; }
+  .countries input { accent-color: var(--primary); }
+
+  .btn { background: var(--primary); color:#fff; border:none; border-radius:4px; padding: 11px 22px; font-size:15px; font-weight:700; font-family:inherit; cursor:pointer; }
+  .btn:hover { background: var(--primary-dark); }
+  .btn.ghost { background:#fff; color: var(--primary); border:1px solid var(--line); }
+  .btn.ghost:hover { border-color: var(--primary); }
+  .actions { display:flex; justify-content: space-between; align-items:center; margin-top: 4px; }
+
+  blockquote.disclaimer { margin: 0 0 20px; border-left: 4px solid var(--accent); background: #f2fbf9; padding: 12px 16px; font-size: 13px; color: #33544d; border-radius: 0 4px 4px 0; }
+
+  table { width:100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { text-align: right; padding: 11px 12px; border-bottom: 1px solid var(--line-soft); }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { background: #f5f5f5; color: var(--text-dark); font-weight:700; font-size:12.5px; border-bottom: 2px solid var(--line); }
+  tbody tr:hover { background: #fbfbfb; }
+  td.net { font-weight:700; color: var(--text-dark); }
+  td .eff { font-size: 11.5px; color: var(--muted); font-weight: 400; }
+  .best { color: var(--good); }
+  .flag { font-weight:700; color: var(--text-dark); }
+  .tag { font-size:11px; background: var(--primary-soft); color: var(--primary-dark); border-radius: 20px; padding: 2px 9px; font-weight:700; margin-left:6px; }
+
+  .note { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .hidden { display:none; }
+
+  .ptable { border:1px solid var(--line); border-radius:6px; overflow:hidden; }
+  .phead, .prow { display:grid; grid-template-columns: 1.5fr 1fr 1fr; gap:12px; align-items:center; padding:10px 14px; }
+  .phead { background:#f5f5f5; font-size:12px; font-weight:700; color:var(--text-dark); }
+  .prow { border-top:1px solid var(--line-soft); }
+  .prow .pname { font-size:13.5px; font-weight:600; color:var(--text-dark); }
+  .prow .pname .hint { display:block; font-size:11px; color:var(--muted); font-weight:400; }
+  .prow input { width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:4px; font-family:inherit; font-size:14px; }
+  .warn { background:#fdeeee; border:1px solid #f3c6c6; color:#9a3131; border-radius:6px; padding:12px 14px; font-size:13px; margin:14px 0 0; }
+  .warn ul { margin:6px 0 0; padding-left:18px; }
+  input.invalid { border-color:#d0403f !important; box-shadow:0 0 0 3px #fdeeee; background:#fff7f7; }
+</style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="logo"><span class="mark">P</span> Pensionsskattejämförelse</div>
+  <div class="links">
+    <a href="#" class="active">Beräkna</a>
+    <a href="#">Om beräkningen</a>
+    <a href="#">Källor</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="inner">
+    <h1>Jämför skatt på pension vid utflyttning</h1>
+    <p>Beslutsstöd som visar ungefärligt nettoutfall om du tar ut din pension som kvarboende i Sverige jämfört med i andra länder. Prototyp.</p>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="steps">
+    <div class="pill active" id="st1"><b>1</b> Inmatning</div>
+    <div class="pill" id="st2"><b>2</b> Jämförelse</div>
+  </div>
+
+  <!-- VY 1: INMATNING -->
+  <div id="view-input">
+    <div class="card">
+      <h2>Dina uppgifter</h2>
+      <p class="sub">Ange din ålder, totala belopp per pensionstyp och när du planerar att börja ta ut respektive pension.</p>
+      <div class="grid2" style="max-width:440px">
+        <label class="fld">
+          <span class="lab">Din ålder idag <span class="hint">år (40–100)</span></span>
+          <input type="number" id="age" value="63" min="40" max="100">
+        </label>
+        <label class="fld">
+          <span class="lab">Värdeutveckling under utbetalning <span class="hint">% per år</span></span>
+          <input type="number" id="growth" value="5" step="0.5">
+        </label>
+      </div>
+
+      <div class="ptable">
+        <div class="phead"><span>Pensionstyp</span><span>Totalt belopp (kr)</span><span>Startålder för uttag</span></div>
+        <div class="prow">
+          <span class="pname">Allmän pension <span class="hint">tidigast 64 år</span></span>
+          <input type="text" inputmode="numeric" class="amount" id="alp" value="3 600 000">
+          <input type="number" id="alp_age" value="66" min="64" max="100">
+        </div>
+        <div class="prow">
+          <span class="pname">Tjänstepension, offentlig <span class="hint">tidigast 55 år</span></span>
+          <input type="text" inputmode="numeric" class="amount" id="tpo" value="0">
+          <input type="number" id="tpo_age" value="65" min="55" max="100">
+        </div>
+        <div class="prow">
+          <span class="pname">Tjänstepension, privat <span class="hint">tidigast 55 år</span></span>
+          <input type="text" inputmode="numeric" class="amount" id="tpp" value="1 920 000">
+          <input type="number" id="tpp_age" value="65" min="55" max="100">
+        </div>
+        <div class="prow">
+          <span class="pname">Privat pension <span class="hint">tidigast 55 år</span></span>
+          <input type="text" inputmode="numeric" class="amount" id="prp" value="480 000">
+          <input type="number" id="prp_age" value="62" min="55" max="100">
+        </div>
+      </div>
+      <p class="note">Lägsta uttagsålder (2026): allmän pension 64 år, garantipension 67 år, tjänstepension oftast 55 år (varierar med avtal), privat pension 55 år. Källa: Pensionsmyndigheten. Startåldern styr uttagets giltighet och valideras nedan.</p>
+
+      <label class="fld" style="max-width:420px;margin-top:16px">
+        <span class="lab">Civilstånd <span class="hint">påverkar skatten i vissa länder</span></span>
+        <div class="radios" id="civil">
+          <label data-v="single"><input type="radio" name="civil" value="single">Ensamstående</label>
+          <label data-v="married" class="on"><input type="radio" name="civil" value="married" checked>Gift eller partner</label>
+        </div>
+      </label>
+    </div>
+
+    <div class="card">
+      <h2>Länder att jämföra mot Sverige</h2>
+      <p class="sub">Välj ett eller flera länder.</p>
+      <div class="countries" id="countries">
+        <label class="on" data-c="Portugal"><input type="checkbox" checked>Portugal</label>
+        <label class="on" data-c="Spanien"><input type="checkbox" checked>Spanien</label>
+        <label class="on" data-c="Frankrike"><input type="checkbox" checked>Frankrike</label>
+        <label data-c="Cypern"><input type="checkbox">Cypern</label>
+        <label data-c="Malta"><input type="checkbox">Malta</label>
+        <label data-c="Italien"><input type="checkbox">Italien</label>
+        <label class="on" data-c="Thailand"><input type="checkbox" checked>Thailand</label>
+      </div>
+      <div id="inputwarn" class="warn hidden"></div>
+      <div class="actions">
+        <span class="note">Utfallet visas för uttag över 5, 10 och 20 år. Sverige = kvarboende (progressiv skatt).</span>
+        <button class="btn" onclick="compare()">Jämför &rarr;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VY 2: RESULTAT -->
+  <div id="view-result" class="hidden">
+    <div id="agewarn" class="warn hidden" style="margin-bottom:16px"></div>
+    <blockquote class="disclaimer">
+      <strong>Observera.</strong> Översiktlig uppskattning som beslutsstöd, inte skatterådgivning. Skatteskalorna bygger på 2025 års satser och är förenklade (grundavdrag och avdrag är schabloner, solidaritetstillägg utelämnas). Belopp i euro och baht räknas om med EUR ca 11,04 och THB ca 0,29 kr. Sverige avser kvarboende pensionär. Flyttar man ut och tar ut pensionen som begränsat skattskyldig gäller i stället SINK, 22,5 procent. Italien avser den särskilda 7-procentsregeln för utländska pensionärer som flyttar till mindre orter i södra Italien (tidsbegränsad). Utbetalningen modelleras som en annuitet, där kvarvarande kapital växer med angiven värdeutveckling, vilket gör att totalt utbetalt belopp överstiger det inmatade kapitalet. Alla värden ska verifieras mot respektive lands regler.
+    </blockquote>
+
+    <div class="card">
+      <h2>Nettobelopp per månad beroende på uttagsperiod</h2>
+      <p class="sub" id="assum"></p>
+      <table>
+        <thead>
+          <tr><th>Land</th><th>Uttag 5 år</th><th>Uttag 10 år</th><th>Uttag 20 år</th></tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <p class="note">Varje pension betalas ut från sin egen startålder, och skatten beräknas på den sammanlagda årsinkomsten varje år. Cellen visar genomsnittligt nettobelopp per månad under utbetalningstiden, effektiv skatt och skillnad mot Sverige. När pensioner överlappar blir årsinkomsten högre och skatten mer progressiv. Thailand belastas med sjukförsäkring, eftersom landet ligger utanför EU/EES.</p>
+    </div>
+
+    <div class="actions">
+      <button class="btn ghost" onclick="back()">&larr; Ändra uppgifter</button>
+      <button class="btn" onclick="alert('I en skarp version exporteras jämförelsen som PDF.')">Exportera PDF</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Verkliga skatteskalor (2025 års satser, förenklade). Belopp i lokal valuta.
+  // MÅSTE verifieras mot respektive lands skattemyndighet innan skarp användning.
+  const FX = { EUR: 11.04, THB: 0.29 }; // kr per enhet, ca juli 2026
+  const RULES = {
+    "Sverige":   { cur:"SEK", kind:"prog", ins:0,
+      brackets:[[100000,.12],[250000,.25],[450000,.31],[733000,.33],[Infinity,.52]] },
+    "Portugal":  { cur:"EUR", kind:"prog", allowance:4104, ins:0,
+      brackets:[[8059,.13],[12160,.165],[17233,.22],[22306,.25],[28400,.32],[41629,.355],[44987,.435],[83696,.45],[Infinity,.48]] },
+    "Spanien":   { cur:"EUR", kind:"prog", allowance:6700, ins:0,
+      brackets:[[12450,.19],[20200,.24],[35200,.30],[60000,.37],[300000,.45],[Infinity,.47]] },
+    "Frankrike": { cur:"EUR", kind:"quotient", abatt:0.10, abattCap:4321, marriedParts:2, ins:0,
+      brackets:[[11497,0],[29315,.11],[83823,.30],[180294,.41],[Infinity,.45]] },
+    "Cypern":    { cur:"EUR", kind:"cyprus", ins:0,
+      brackets:[[19500,0],[28000,.20],[36300,.25],[60000,.30],[Infinity,.35]], flat5:0.05, flat5thr:5000 },
+    "Malta":     { cur:"EUR", kind:"malta", ins:0,
+      married:[[15000,0],[23000,.15],[60000,.25],[Infinity,.35]],
+      single:[[9100,0],[14500,.15],[60000,.25],[Infinity,.35]] },
+    "Italien":   { cur:"EUR", kind:"flat", flat:0.07, ins:0 },
+    "Thailand":  { cur:"THB", kind:"prog", allowance:350000, ins:30000,
+      brackets:[[150000,0],[300000,.05],[500000,.10],[750000,.15],[1000000,.20],[2000000,.25],[5000000,.30],[Infinity,.35]] }
+  };
+  const PERIODS = [5, 10, 20];
+  const MINAGE = { alp:64, tpo:55, tpp:55, prp:55 };
+  const PLABEL = { alp:"Allmän pension", tpo:"Tjänstepension, offentlig", tpp:"Tjänstepension, privat", prp:"Privat pension" };
+  const COLORS = { "Sverige":"#00a58a", "Portugal":"#3273dc", "Spanien":"#e0794b",
+    "Frankrike":"#8e5bd0", "Cypern":"#d9455f", "Malta":"#2fa4c7", "Italien":"#4f9d3a", "Thailand":"#c9a227" };
+
+  function progTax(income, brackets){
+    let tax = 0, prev = 0;
+    for (const [limit, rate] of brackets){
+      tax += Math.max(0, Math.min(income, limit) - prev) * rate;
+      prev = limit;
+      if (income <= limit) break;
+    }
+    return tax;
+  }
+  // skatt i kronor på ett årligt bruttobelopp i kronor
+  function taxSEK(country, grossSEK, married){
+    const r = RULES[country];
+    const fx = r.cur === "SEK" ? 1 : FX[r.cur];
+    const g = grossSEK / fx;
+    let taxLoc = 0;
+    if (r.kind === "flat") taxLoc = g * r.flat;
+    else if (r.kind === "prog") taxLoc = progTax(Math.max(0, g - (r.allowance||0)), r.brackets);
+    else if (r.kind === "quotient"){ const base = g - Math.min(g*r.abatt, r.abattCap); const parts = married ? r.marriedParts : 1; taxLoc = progTax(base/parts, r.brackets) * parts; }
+    else if (r.kind === "cyprus"){ const prog = progTax(g, r.brackets); const f5 = Math.max(0, g - r.flat5thr) * r.flat5; taxLoc = Math.min(prog, f5); }
+    else if (r.kind === "malta") taxLoc = progTax(g, married ? r.married : r.single);
+    return taxLoc * fx;
+  }
+  // årligt uttag som annuitet: kvarvarande kapital växer med g per år
+  function annuity(amount, years, g){
+    return g > 0 ? amount * g / (1 - Math.pow(1 + g, -years)) : amount / years;
+  }
+  // Tidslinjemodell: varje pension betalas ut som annuitet över "years" år från sin startålder.
+  // Årsinkomsten (summan av aktiva pensioner) beskattas progressivt varje år.
+  function outcome(country, pensions, years, married, g){
+    const active = pensions.filter(p => p.amt > 0);
+    if (!active.length || years <= 0) return { netMonth: 0, eff: 0, netTotal: 0, payoutYears: 0 };
+    active.forEach(p => { p._a = annuity(p.amt, years, g); });
+    const startMin = Math.min(...active.map(p => p.start));
+    const endMax = Math.max(...active.map(p => p.start + years));
+    const ins = RULES[country].ins;
+    let netTotal = 0, taxTotal = 0, grossTotal = 0, payoutYears = 0;
+    for (let t = startMin; t < endMax; t++){
+      const gross = active.reduce((s, p) => s + ((t >= p.start && t < p.start + years) ? p._a : 0), 0);
+      if (gross <= 0) continue;
+      const tax = taxSEK(country, gross, married);
+      netTotal += gross - tax - ins;
+      taxTotal += tax; grossTotal += gross; payoutYears++;
+    }
+    return {
+      netMonth: payoutYears ? netTotal / (payoutYears * 12) : 0,
+      eff: grossTotal > 0 ? taxTotal / grossTotal : 0,
+      netTotal, payoutYears
+    };
+  }
+
+  document.querySelectorAll('#civil label').forEach(l => l.addEventListener('click', () => {
+    document.querySelectorAll('#civil label').forEach(x => x.classList.remove('on'));
+    l.classList.add('on'); l.querySelector('input').checked = true;
+  }));
+  document.querySelectorAll('#countries label').forEach(l => l.addEventListener('click', e => {
+    if (e.target.tagName !== 'INPUT') { const cb = l.querySelector('input'); cb.checked = !cb.checked; }
+    l.classList.toggle('on', l.querySelector('input').checked);
+  }));
+
+  // Åldersfält med tillåtet intervall (min styrs av lägsta uttagsålder)
+  const AGE_SPECS = [
+    ["age", 40, 100, "Din ålder idag"],
+    ["alp_age", 64, 100, "Startålder allmän pension"],
+    ["tpo_age", 55, 100, "Startålder tjänstepension, offentlig"],
+    ["tpp_age", 55, 100, "Startålder tjänstepension, privat"],
+    ["prp_age", 55, 100, "Startålder privat pension"],
+  ];
+  function validateAges() {
+    const msgs = [];
+    AGE_SPECS.forEach(([id, min, max, label]) => {
+      const el = document.getElementById(id);
+      const v = parseInt(el.value);
+      const valid = el.value !== '' && !isNaN(v) && v >= min && v <= max;
+      el.classList.toggle('invalid', !valid);
+      if (!valid) msgs.push(label + " måste vara mellan " + min + " och " + max + " år.");
+    });
+    return msgs;
+  }
+  // Livevalidering medan man skriver
+  AGE_SPECS.forEach(([id]) => {
+    document.getElementById(id).addEventListener('input', validateAges);
+  });
+
+  const fmt = n => Math.round(n).toLocaleString('sv-SE') + ' kr';
+  const pct = n => (n*100).toFixed(1).replace('.',',') + ' %';
+  const val = id => parseFloat(String(document.getElementById(id).value).replace(/[^\d]/g, '')) || 0;
+
+  // Tusentalsavgränsare i beloppsfälten (sv-SE, mellanslag)
+  const groupThousands = s => s.replace(/[^\d]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  document.querySelectorAll('input.amount').forEach(inp => {
+    const format = () => { inp.value = groupThousands(inp.value); };
+    format();
+    inp.addEventListener('input', format);
+  });
+
+  function compare() {
+    // Hård validering av åldersfält, blockerar beräkning vid fel
+    const ageErrors = validateAges();
+    const iw = document.getElementById('inputwarn');
+    if (ageErrors.length) {
+      iw.innerHTML = "<strong>Kontrollera åldrarna innan beräkning:</strong><ul>" + ageErrors.map(m => "<li>" + m + "</li>").join('') + "</ul>";
+      iw.classList.remove('hidden');
+      iw.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    iw.classList.add('hidden');
+
+    const total = val('alp') + val('tpo') + val('tpp') + val('prp');
+    const married = document.querySelector('input[name=civil]:checked').value === 'married';
+    const age = parseInt(document.getElementById('age').value) || 0;
+    const g = (parseFloat(document.getElementById('growth').value) || 0) / 100;
+    const pensions = [
+      { amt: val('alp'), start: parseInt(document.getElementById('alp_age').value) || 0 },
+      { amt: val('tpo'), start: parseInt(document.getElementById('tpo_age').value) || 0 },
+      { amt: val('tpp'), start: parseInt(document.getElementById('tpp_age').value) || 0 },
+      { amt: val('prp'), start: parseInt(document.getElementById('prp_age').value) || 0 },
+    ];
+
+    // Validera startåldrar mot lägsta uttagsålder
+    const warnings = [];
+    Object.keys(MINAGE).forEach(k => {
+      if (val(k) <= 0) return;
+      const startAge = parseInt(document.getElementById(k + '_age').value) || 0;
+      if (startAge < MINAGE[k])
+        warnings.push(PLABEL[k] + " kan tidigast tas ut vid " + MINAGE[k] + " år (du angav " + startAge + ").");
+      else if (startAge < age)
+        warnings.push(PLABEL[k] + " har startålder " + startAge + " som är före din nuvarande ålder " + age + ".");
+    });
+    const wbox = document.getElementById('agewarn');
+    if (warnings.length) {
+      wbox.innerHTML = "<strong>Kontrollera uttagsåldrarna:</strong><ul>" + warnings.map(w => "<li>" + w + "</li>").join('') + "</ul>";
+      wbox.classList.remove('hidden');
+    } else {
+      wbox.classList.add('hidden');
+    }
+
+    const chosen = [...document.querySelectorAll('#countries label')].filter(l => l.querySelector('input').checked).map(l => l.dataset.c);
+    const lands = ["Sverige", ...chosen];
+
+    document.getElementById('assum').textContent =
+      "Totalt kapital " + fmt(total) + ", värdeutveckling " + (g*100).toFixed(1).replace('.',',') + " % per år under utbetalning. Civilstånd: " +
+      (married ? "gift eller partner" : "ensamstående") + ". Sverige avser kvarboende med progressiv pensionsskatt.";
+
+    const bestPer = {}, seMonth = {};
+    PERIODS.forEach(y => {
+      bestPer[y] = Math.max(...lands.map(c => outcome(c, pensions, y, married, g).netMonth));
+      seMonth[y] = outcome("Sverige", pensions, y, married, g).netMonth;
+    });
+
+    document.getElementById('rows').innerHTML = lands.map(c => {
+      const isSE = c === "Sverige";
+      const cells = PERIODS.map(y => {
+        const o = outcome(c, pensions, y, married, g);
+        const isBest = Math.abs(o.netMonth - bestPer[y]) < 1;
+        const month = o.netMonth;
+        const diff = o.netMonth - seMonth[y];
+        const diffLine = isSE
+          ? '<div class="eff">referens</div>'
+          : `<div class="eff" style="color:${diff >= 0 ? '#257953' : '#b03636'}">${diff >= 0 ? '+' : ''}${fmt(diff)}/mån mot Sverige</div>`;
+        return `<td class="net ${isBest ? 'best' : ''}">${fmt(month)}/mån${isBest ? ' <span class="tag">bäst</span>' : ''}<div class="eff">eff. skatt ${pct(o.eff)}</div>${diffLine}</td>`;
+      }).join('');
+      return `<tr${isSE ? ' style="background:#f2fbf9"' : ''}><td class="flag">${c}${isSE ? ' <span class="tag" style="background:#d8f0ea;color:#1f6a5a">referens</span>' : ''}</td>${cells}</tr>`;
+    }).join('');
+
+    document.getElementById('view-input').classList.add('hidden');
+    document.getElementById('view-result').classList.remove('hidden');
+    document.getElementById('st1').classList.replace('active','done');
+    document.getElementById('st2').classList.add('active');
+    window.scrollTo(0,0);
+  }
+
+  function renderChart(pensions, married, chosen, g) {
+    const W = 760, H = 360, padL = 66, padR = 16, padT = 16, padB = 38;
+    const xMin = 3, xMax = 25;
+    const series = [{ land:"Sverige" }, ...chosen.map(c => ({ land:c }))];
+
+    let maxY = 0;
+    series.forEach(s => {
+      s.pts = [];
+      for (let y = xMin; y <= xMax; y++){
+        const month = outcome(s.land, pensions, y, married, g).netMonth;
+        s.pts.push([y, month]);
+        if (month > maxY) maxY = month;
+      }
+    });
+    const steps = [2000, 5000, 10000, 20000, 25000, 50000, 100000, 200000, 500000];
+    let step = steps[steps.length - 1];
+    for (const st of steps){ if (maxY / st <= 6){ step = st; break; } }
+    maxY = Math.max(step, Math.ceil(maxY / step) * step);
+
+    const xPos = y => padL + (y - xMin) / (xMax - xMin) * (W - padL - padR);
+    const yPos = v => padT + (1 - v / maxY) * (H - padT - padB);
+    const kLabel = v => v === 0 ? '0' : (v / 1000).toLocaleString('sv-SE') + ' k';
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" font-family="inherit">`;
+    for (let v = 0; v <= maxY + 1e-9; v += step){
+      const yy = yPos(v);
+      svg += `<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="#ededed"/>`;
+      svg += `<text x="${padL-8}" y="${yy+4}" text-anchor="end" font-size="11" fill="#7a7a7a">${kLabel(v)}</text>`;
+    }
+    svg += `<text x="14" y="${(padT+H-padB)/2}" text-anchor="middle" font-size="11" fill="#4a4a4a" transform="rotate(-90 14 ${(padT+H-padB)/2})">Netto per månad (kr)</text>`;
+    [5,10,15,20,25].forEach(t => {
+      svg += `<text x="${xPos(t)}" y="${H-padB+18}" text-anchor="middle" font-size="11" fill="#7a7a7a">${t} år</text>`;
+    });
+    svg += `<text x="${(padL+W-padR)/2}" y="${H-4}" text-anchor="middle" font-size="11.5" fill="#4a4a4a">Uttagsperiod</text>`;
+    PERIODS.forEach(t => {
+      svg += `<line x1="${xPos(t)}" y1="${padT}" x2="${xPos(t)}" y2="${H-padB}" stroke="#cfd6e0" stroke-dasharray="4 4"/>`;
+    });
+    series.forEach(s => {
+      const col = COLORS[s.land] || "#666";
+      const d = s.pts.map((p,i) => (i?'L':'M') + xPos(p[0]).toFixed(1) + ' ' + yPos(p[1]).toFixed(1)).join(' ');
+      const dash = s.land === "Sverige" ? 'stroke-dasharray="6 4"' : '';
+      svg += `<path d="${d}" fill="none" stroke="${col}" stroke-width="2.5" ${dash}/>`;
+      PERIODS.forEach(t => {
+        const sp = s.pts.find(p => p[0] === t);
+        if (sp) svg += `<circle cx="${xPos(sp[0])}" cy="${yPos(sp[1])}" r="3.5" fill="${col}"/>`;
+      });
+    });
+    svg += `</svg>`;
+    document.getElementById('chart').innerHTML = svg;
+
+    document.getElementById('legend').innerHTML = series.map(s => {
+      const col = COLORS[s.land] || "#666";
+      return `<span style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:3px;background:${col};display:inline-block;border-radius:2px"></span>${s.land}${s.land==="Sverige"?' (kvarboende)':''}</span>`;
+    }).join('');
+  }
+
+  function back() {
+    document.getElementById('view-result').classList.add('hidden');
+    document.getElementById('view-input').classList.remove('hidden');
+    document.getElementById('st2').classList.remove('active');
+    document.getElementById('st1').classList.replace('done','active');
+    window.scrollTo(0,0);
+  }
+</script>
+</body>
+</html>
