@@ -135,10 +135,15 @@
         <label class="fld"><span class="lab">Nuvarande värde <span class="hint">kr</span></span><input type="text" inputmode="numeric" class="amount acc" id="alp_bal" value="800 000"></label>
         <label class="fld"><span class="lab">Månadslön <span class="hint">kr, brutto</span></span><input type="text" inputmode="numeric" class="amount acc" id="salary" value="40 000"></label>
       </div>
-      <p style="font-weight:700;color:var(--text-dark);margin:6px 0 8px;font-size:13.5px">Tjänstepension</p>
+      <p style="font-weight:700;color:var(--text-dark);margin:6px 0 8px;font-size:13.5px">Tjänstepension, offentlig</p>
       <div class="grid2" style="max-width:520px">
-        <label class="fld"><span class="lab">Nuvarande värde <span class="hint">kr</span></span><input type="text" inputmode="numeric" class="amount acc" id="tp_bal" value="500 000"></label>
-        <label class="fld"><span class="lab">Insättning per månad <span class="hint">kr</span></span><input type="text" inputmode="numeric" class="amount acc" id="tp_month" value="3 000"></label>
+        <label class="fld"><span class="lab">Nuvarande värde <span class="hint">kr</span></span><input type="text" inputmode="numeric" class="amount acc" id="tpo_bal" value="0"></label>
+        <label class="fld"><span class="lab">Insättning per månad <span class="hint">kr</span></span><input type="text" inputmode="numeric" class="amount acc" id="tpo_month" value="0"></label>
+      </div>
+      <p style="font-weight:700;color:var(--text-dark);margin:6px 0 8px;font-size:13.5px">Tjänstepension, privat</p>
+      <div class="grid2" style="max-width:520px">
+        <label class="fld"><span class="lab">Nuvarande värde <span class="hint">kr</span></span><input type="text" inputmode="numeric" class="amount acc" id="tpp_bal" value="500 000"></label>
+        <label class="fld"><span class="lab">Insättning per månad <span class="hint">kr</span></span><input type="text" inputmode="numeric" class="amount acc" id="tpp_month" value="3 000"></label>
       </div>
       <p style="font-weight:700;color:var(--text-dark);margin:6px 0 8px;font-size:13.5px">Privat pension</p>
       <div class="grid2" style="max-width:520px">
@@ -146,7 +151,7 @@
         <label class="fld"><span class="lab">Insättning per månad <span class="hint">kr</span></span><input type="text" inputmode="numeric" class="amount acc" id="prp_month" value="1 000"></label>
       </div>
       <p class="note" id="accsummary"></p>
-      <p class="note">Tjänstepensionen fylls i som privat tjänstepension nedan. Har du offentlig tjänstepension, flytta beloppet till rätt rad. Allmän pension bygger på en schablon: 18,5 % av lön upp till taket (7,5 inkomstbasbelopp).</p>
+      <p class="note">Allmän pension bygger på en schablon: 18,5 % av lön upp till taket (7,5 inkomstbasbelopp). Offentlig tjänstepension beskattas i Sverige även vid utflyttning, medan privat tjänstepension följer respektive lands avtal.</p>
     </div>
 
     <div class="card">
@@ -475,12 +480,13 @@
     const r = (parseFloat(document.getElementById('acc_return').value) || 0) / 100;
     const alpContribAnnual = 0.185 * Math.min(val('salary') * 12, ALP_CAP);
     const alp = fvLump(val('alp_bal'), r, n) + fvStream(alpContribAnnual, r, n);
-    const tpp = fvLump(val('tp_bal'), r, n) + fvStream(val('tp_month') * 12, r, n);
+    const tpo = fvLump(val('tpo_bal'), r, n) + fvStream(val('tpo_month') * 12, r, n);
+    const tpp = fvLump(val('tpp_bal'), r, n) + fvStream(val('tpp_month') * 12, r, n);
     const prp = fvLump(val('prp_bal'), r, n) + fvStream(val('prp_month') * 12, r, n);
-    setAmount('alp', alp); setAmount('tpp', tpp); setAmount('prp', prp);
+    setAmount('alp', alp); setAmount('tpo', tpo); setAmount('tpp', tpp); setAmount('prp', prp);
     const s = document.getElementById('accsummary');
     s.textContent = n > 0
-      ? `Vid ${retire} år (om ${n} år, ${(r*100).toFixed(1).replace('.', ',')} % avkastning): allmän ${fmt(alp)}, tjänstepension ${fmt(tpp)}, privat ${fmt(prp)}.`
+      ? `Vid ${retire} år (om ${n} år, ${(r*100).toFixed(1).replace('.', ',')} % avkastning): allmän ${fmt(alp)}, tjänstepension offentlig ${fmt(tpo)}, privat ${fmt(tpp)}, privat pension ${fmt(prp)}.`
       : "Pensionsålder måste vara högre än din nuvarande ålder.";
   }
   document.querySelectorAll('.acc').forEach(el => el.addEventListener('input', projectCapital));
