@@ -124,6 +124,32 @@
   <!-- VY 1: INMATNING -->
   <div id="view-input">
     <div class="card">
+      <h2>Steg 0 – beräkna ditt pensionskapital (valfritt)</h2>
+      <p class="sub">Uppskatta hur mycket kapital du har vid pension. Resultatet fyller automatiskt i de totala beloppen nedan.</p>
+      <div class="grid2" style="max-width:520px">
+        <label class="fld"><span class="lab">Pensionsålder <span class="hint">år</span></span><input type="number" class="acc" id="retire_age" value="66" min="55" max="75"></label>
+        <label class="fld"><span class="lab">Förväntad avkastning under sparandet <span class="hint">% per år</span></span><input type="number" class="acc" id="acc_return" value="5" step="0.5"></label>
+      </div>
+      <p style="font-weight:700;color:var(--text-dark);margin:6px 0 8px;font-size:13.5px">Allmän pension</p>
+      <div class="grid2" style="max-width:520px">
+        <label class="fld"><span class="lab">Nuvarande värde <span class="hint">kr</span></span><input type="text" inputmode="numeric" class="amount acc" id="alp_bal" value="800 000"></label>
+        <label class="fld"><span class="lab">Månadslön <span class="hint">kr, brutto</span></span><input type="text" inputmode="numeric" class="amount acc" id="salary" value="40 000"></label>
+      </div>
+      <p style="font-weight:700;color:var(--text-dark);margin:6px 0 8px;font-size:13.5px">Tjänstepension</p>
+      <div class="grid2" style="max-width:520px">
+        <label class="fld"><span class="lab">Nuvarande värde <span class="hint">kr</span></span><input type="text" inputmode="numeric" class="amount acc" id="tp_bal" value="500 000"></label>
+        <label class="fld"><span class="lab">Insättning per månad <span class="hint">kr</span></span><input type="text" inputmode="numeric" class="amount acc" id="tp_month" value="3 000"></label>
+      </div>
+      <p style="font-weight:700;color:var(--text-dark);margin:6px 0 8px;font-size:13.5px">Privat pension</p>
+      <div class="grid2" style="max-width:520px">
+        <label class="fld"><span class="lab">Nuvarande värde <span class="hint">kr</span></span><input type="text" inputmode="numeric" class="amount acc" id="prp_bal" value="100 000"></label>
+        <label class="fld"><span class="lab">Insättning per månad <span class="hint">kr</span></span><input type="text" inputmode="numeric" class="amount acc" id="prp_month" value="1 000"></label>
+      </div>
+      <p class="note" id="accsummary"></p>
+      <p class="note">Tjänstepensionen fylls i som privat tjänstepension nedan. Har du offentlig tjänstepension, flytta beloppet till rätt rad. Allmän pension bygger på en schablon: 18,5 % av lön upp till taket (7,5 inkomstbasbelopp).</p>
+    </div>
+
+    <div class="card">
       <h2>Dina uppgifter</h2>
       <p class="sub">Ange din ålder, totala belopp per pensionstyp och när du planerar att börja ta ut respektive pension.</p>
       <div class="grid2" style="max-width:440px">
@@ -436,6 +462,30 @@
     format();
     inp.addEventListener('input', format);
   });
+
+  // Steg 0 – projicera pensionskapital vid pension
+  const IBB = 80600, ALP_CAP = 7.5 * IBB; // inkomstbasbelopp (schablon 2025)
+  const fvLump = (b, r, n) => b * Math.pow(1 + r, n);
+  const fvStream = (annual, r, n) => r > 0 ? annual * (Math.pow(1 + r, n) - 1) / r : annual * n;
+  const setAmount = (id, v) => { document.getElementById(id).value = groupThousands(String(Math.round(v))); };
+  function projectCapital() {
+    const age = parseInt(document.getElementById('age').value) || 0;
+    const retire = parseInt(document.getElementById('retire_age').value) || age;
+    const n = Math.max(0, retire - age);
+    const r = (parseFloat(document.getElementById('acc_return').value) || 0) / 100;
+    const alpContribAnnual = 0.185 * Math.min(val('salary') * 12, ALP_CAP);
+    const alp = fvLump(val('alp_bal'), r, n) + fvStream(alpContribAnnual, r, n);
+    const tpp = fvLump(val('tp_bal'), r, n) + fvStream(val('tp_month') * 12, r, n);
+    const prp = fvLump(val('prp_bal'), r, n) + fvStream(val('prp_month') * 12, r, n);
+    setAmount('alp', alp); setAmount('tpp', tpp); setAmount('prp', prp);
+    const s = document.getElementById('accsummary');
+    s.textContent = n > 0
+      ? `Vid ${retire} år (om ${n} år, ${(r*100).toFixed(1).replace('.', ',')} % avkastning): allmän ${fmt(alp)}, tjänstepension ${fmt(tpp)}, privat ${fmt(prp)}.`
+      : "Pensionsålder måste vara högre än din nuvarande ålder.";
+  }
+  document.querySelectorAll('.acc').forEach(el => el.addEventListener('input', projectCapital));
+  document.getElementById('age').addEventListener('input', projectCapital);
+  projectCapital();
 
   function compare() {
     // Hård validering av åldersfält, blockerar beräkning vid fel
