@@ -210,7 +210,7 @@
         </thead>
         <tbody id="rows"></tbody>
       </table>
-      <p class="note">Varje pension betalas ut från sin egen startålder, och skatten beräknas på den sammanlagda årsinkomsten varje år enligt skatteavtalens beskattningsrätt per pensionstyp. Offentlig tjänstepension beskattas i Sverige (SINK), övriga typer i landet eller i båda med avräkning. Cellen visar genomsnittligt nettobelopp per månad, per år och totalt över utbetalningstiden, plus effektiv skatt och skillnad mot Sverige. Thailand belastas med sjukförsäkring, eftersom landet ligger utanför EU/EES.</p>
+      <p class="note">Varje pension betalas ut från sin egen startålder, och skatten beräknas på den sammanlagda årsinkomsten varje år enligt skatteavtalens beskattningsrätt per pensionstyp. Offentlig tjänstepension beskattas i Sverige (SINK), övriga typer i landet eller i båda med avräkning. Cellen visar totalt netto över hela utbetalningstiden, plus genomsnittligt netto per månad och skillnad mot Sverige. Eftersom pensionerna startar vid olika åldrar kan utbetalningen sträcka sig över fler år än den valda uttagsperioden, och antalet faktiska utbetalningsår står i cellen. Thailand belastas med sjukförsäkring, eftersom landet ligger utanför EU/EES.</p>
     </div>
 
     <div class="card">
@@ -485,24 +485,23 @@
       "Totalt kapital " + fmt(total) + ", värdeutveckling " + (g*100).toFixed(1).replace('.',',') + " % per år under utbetalning. Civilstånd: " +
       (married ? "gift eller partner" : "ensamstående") + ". Sverige avser kvarboende med progressiv pensionsskatt.";
 
-    const bestPer = {}, seMonth = {};
+    const bestPer = {}, seTot = {};
     PERIODS.forEach(y => {
-      bestPer[y] = Math.max(...lands.map(c => outcome(c, pensions, y, married, g).netMonth));
-      seMonth[y] = outcome("Sverige", pensions, y, married, g).netMonth;
+      bestPer[y] = Math.max(...lands.map(c => outcome(c, pensions, y, married, g).netTotal));
+      seTot[y] = outcome("Sverige", pensions, y, married, g).netTotal;
     });
 
     document.getElementById('rows').innerHTML = lands.map(c => {
       const isSE = c === "Sverige";
       const cells = PERIODS.map(y => {
         const o = outcome(c, pensions, y, married, g);
-        const isBest = Math.abs(o.netMonth - bestPer[y]) < 1;
-        const perYear = o.payoutYears ? o.netTotal / o.payoutYears : 0;
-        const diff = o.netMonth - seMonth[y];
+        const isBest = Math.abs(o.netTotal - bestPer[y]) < 1;
+        const diff = o.netTotal - seTot[y];
         const diffLine = isSE
           ? '<div class="eff">referens</div>'
-          : `<div class="eff" style="color:${diff >= 0 ? '#257953' : '#b03636'}">${diff >= 0 ? '+' : ''}${fmt(diff)}/mån mot Sverige</div>`;
-        return `<td class="net ${isBest ? 'best' : ''}">${fmt(o.netMonth)}/mån${isBest ? ' <span class="tag">bäst</span>' : ''}`
-          + `<div class="eff">${fmt(perYear)}/år · ${fmt(o.netTotal)} totalt</div>`
+          : `<div class="eff" style="color:${diff >= 0 ? '#257953' : '#b03636'}">${diff >= 0 ? '+' : ''}${fmt(diff)} totalt mot Sverige</div>`;
+        return `<td class="net ${isBest ? 'best' : ''}">${fmt(o.netTotal)} totalt${isBest ? ' <span class="tag">bäst</span>' : ''}`
+          + `<div class="eff">${fmt(o.netMonth)}/mån i snitt över ${o.payoutYears} år</div>`
           + `<div class="eff">eff. skatt ${pct(o.eff)}</div>${diffLine}</td>`;
       }).join('');
       return `<tr${isSE ? ' style="background:#f2fbf9"' : ''}><td class="flag">${c}${isSE ? ' <span class="tag" style="background:#d8f0ea;color:#1f6a5a">referens</span>' : ''}</td>${cells}</tr>`;
