@@ -382,13 +382,13 @@
       if (gross <= 0) continue;
       const nets = lands.map(c => (gross - yearTax(c, activeNow, married) - RULES[c].ins));
       const best = Math.max(...nets);
-      const cells = nets.map(n => `<td class="${Math.abs(n - best) < 1 ? 'best' : ''}">${fmt(n)}</td>`).join('');
+      const cells = nets.map(n => { const b = Math.abs(n - best) < 1; return `<td class="${b ? 'best' : ''}" style="${b ? 'font-weight:700' : ''}">${fmt(n)}</td>`; }).join('');
       rows += `<tr><td class="flag">${t} år</td><td>${fmt(gross)}</td>${cells}</tr>`;
       grossSum += gross;
       nets.forEach((n, i) => { netSum[i] += n; });
     }
     const bestTot = Math.max(...netSum);
-    const sumCells = netSum.map(n => `<td class="net ${Math.abs(n - bestTot) < 1 ? 'best' : ''}">${fmt(n)}</td>`).join('');
+    const sumCells = netSum.map(n => { const b = Math.abs(n - bestTot) < 1; return `<td class="net ${b ? 'best' : ''}" style="${b ? 'font-weight:800' : ''}">${fmt(n)}</td>`; }).join('');
     rows += `<tr style="border-top:2px solid var(--line)"><td class="flag">Totalt</td><td class="net">${fmt(grossSum)}</td>${sumCells}</tr>`;
     body.innerHTML = rows;
   }
