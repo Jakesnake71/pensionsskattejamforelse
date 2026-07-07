@@ -195,7 +195,7 @@
   <div id="view-result" class="hidden">
     <div id="agewarn" class="warn hidden" style="margin-bottom:16px"></div>
     <blockquote class="disclaimer">
-      <strong>Observera.</strong> Översiktlig uppskattning som beslutsstöd, inte skatterådgivning. Skatteskalorna bygger på 2025 års satser och är förenklade (grundavdrag och avdrag är schabloner, solidaritetstillägg utelämnas). Belopp i euro och baht räknas om med EUR ca 11,04 och THB ca 0,29 kr. Sverige avser kvarboende pensionär. Flyttar man ut och tar ut pensionen som begränsat skattskyldig gäller i stället SINK, 22,5 procent. Italien avser den särskilda 7-procentsregeln för utländska pensionärer som flyttar till mindre orter i södra Italien (tidsbegränsad). Utbetalningen modelleras som en annuitet, där kvarvarande kapital växer med angiven värdeutveckling, vilket gör att totalt utbetalt belopp överstiger det inmatade kapitalet. Alla värden ska verifieras mot respektive lands regler.
+      <strong>Observera.</strong> Översiktlig uppskattning som beslutsstöd, inte skatterådgivning. Skatteskalorna bygger på 2025 års satser och är förenklade (grundavdrag och avdrag är schabloner, solidaritetstillägg utelämnas). Belopp i euro och baht räknas om med EUR ca 11,04 och THB ca 0,29 kr. Sverige avser kvarboende pensionär. Flyttar man ut och tar ut pensionen som begränsat skattskyldig gäller i stället SINK, 22,5 procent. Italien avser den särskilda 7-procentsregeln för utländska pensionärer som flyttar till mindre orter i södra Italien (tidsbegränsad). Utbetalningen modelleras som en annuitet, där kvarvarande kapital växer med angiven värdeutveckling, vilket gör att totalt utbetalt belopp överstiger det inmatade kapitalet. Skatteavtalens beskattningsrätt tillämpas per pensionstyp: offentlig tjänstepension beskattas i Sverige (SINK), och pensioner som får beskattas i båda länderna hanteras med avräkning. Denna fördelning är en förenkling som måste stämmas av mot avtalstexten i det enskilda fallet. Alla värden ska verifieras mot respektive lands regler.
     </blockquote>
 
     <div class="card">
@@ -207,7 +207,15 @@
         </thead>
         <tbody id="rows"></tbody>
       </table>
-      <p class="note">Varje pension betalas ut från sin egen startålder, och skatten beräknas på den sammanlagda årsinkomsten varje år. Cellen visar genomsnittligt nettobelopp per månad under utbetalningstiden, effektiv skatt och skillnad mot Sverige. När pensioner överlappar blir årsinkomsten högre och skatten mer progressiv. Thailand belastas med sjukförsäkring, eftersom landet ligger utanför EU/EES.</p>
+      <p class="note">Varje pension betalas ut från sin egen startålder, och skatten beräknas på den sammanlagda årsinkomsten varje år enligt skatteavtalens beskattningsrätt per pensionstyp. Offentlig tjänstepension beskattas i Sverige (SINK), övriga typer i landet eller i båda med avräkning. Cellen visar genomsnittligt nettobelopp per månad, effektiv skatt och skillnad mot Sverige. Thailand belastas med sjukförsäkring, eftersom landet ligger utanför EU/EES.</p>
+    </div>
+
+    <div class="card">
+      <h2>Nettobelopp per månad över uttagsperiod</h2>
+      <p class="sub">Hur nettobeloppet per månad förändras när samma kapital tas ut över olika lång tid. Lodräta linjer markerar 5, 10 och 20 år.</p>
+      <div id="chart"></div>
+      <div id="legend" style="display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:12.5px"></div>
+      <p class="note">Kortare uttagsperiod ger högre månadsbelopp, men i länder med progressiv skala äts en del upp av högre skatt. Värdeutvecklingen på kvarvarande kapital gör att kurvan inte halveras även om tiden fördubblas.</p>
     </div>
 
     <div class="actions">
@@ -245,6 +253,20 @@
   const COLORS = { "Sverige":"#00a58a", "Portugal":"#3273dc", "Spanien":"#e0794b",
     "Frankrike":"#8e5bd0", "Cypern":"#d9455f", "Malta":"#2fa4c7", "Italien":"#4f9d3a", "Thailand":"#c9a227" };
 
+  // Svensk källskatt (SINK) på pension för begränsat skattskyldig (utflyttad)
+  const SINK = 0.225;
+  // Beskattningsrätt per land och pensionstyp enligt skatteavtalen:
+  // 'SE' = endast Sverige, 'C' = endast landet, 'BOTH' = båda (avräkning).
+  const TREATY = {
+    "Portugal":  { alp:'BOTH', tpo:'BOTH', tpp:'BOTH', prp:'BOTH' }, // inget avtal sedan 2022
+    "Spanien":   { alp:'BOTH', tpo:'SE',   tpp:'C',    prp:'BOTH' },
+    "Frankrike": { alp:'C',    tpo:'SE',   tpp:'C',    prp:'C' },
+    "Cypern":    { alp:'BOTH', tpo:'SE',   tpp:'BOTH', prp:'BOTH' },
+    "Malta":     { alp:'BOTH', tpo:'SE',   tpp:'BOTH', prp:'BOTH' },
+    "Italien":   { alp:'BOTH', tpo:'SE',   tpp:'BOTH', prp:'BOTH' },
+    "Thailand":  { alp:'BOTH', tpo:'SE',   tpp:'BOTH', prp:'BOTH' },
+  };
+
   function progTax(income, brackets){
     let tax = 0, prev = 0;
     for (const [limit, rate] of brackets){
@@ -273,6 +295,27 @@
   }
   // Tidslinjemodell: varje pension betalas ut som annuitet över "years" år från sin startålder.
   // Årsinkomsten (summan av aktiva pensioner) beskattas progressivt varje år.
+  // Skatt ett givet år, med hänsyn till skatteavtalens beskattningsrätt per pensionstyp.
+  // Sverige (kvarboende) beskattas progressivt på hela årsinkomsten.
+  // Utland: landet beskattar sin del progressivt, Sverige tar SINK på det som Sverige får beskatta,
+  // och för "båda"-pensioner ges avräkning (nettot blir det högre av landets skatt och SINK).
+  function yearTax(country, activeNow, married){
+    const gross = activeNow.reduce((s, p) => s + p._a, 0);
+    if (country === "Sverige") return taxSEK("Sverige", gross, married);
+    const treaty = TREATY[country];
+    let cBase = 0, bothBase = 0, seOnly = 0;
+    activeNow.forEach(p => {
+      const cat = treaty[p.key] || 'BOTH';
+      if (cat === 'SE') seOnly += p._a;
+      else { cBase += p._a; if (cat === 'BOTH') bothBase += p._a; }
+    });
+    const taxC = taxSEK(country, cBase, married);
+    const cTaxOnBoth = cBase > 0 ? taxC * (bothBase / cBase) : 0;
+    const seOnBoth = bothBase * SINK;
+    const taxSEonly = seOnly * SINK;
+    return taxC + Math.max(0, seOnBoth - cTaxOnBoth) + taxSEonly;
+  }
+  // Tidslinjemodell: varje pension betalas ut som annuitet över "years" år från sin startålder.
   function outcome(country, pensions, years, married, g){
     const active = pensions.filter(p => p.amt > 0);
     if (!active.length || years <= 0) return { netMonth: 0, eff: 0, netTotal: 0, payoutYears: 0 };
@@ -282,9 +325,10 @@
     const ins = RULES[country].ins;
     let netTotal = 0, taxTotal = 0, grossTotal = 0, payoutYears = 0;
     for (let t = startMin; t < endMax; t++){
-      const gross = active.reduce((s, p) => s + ((t >= p.start && t < p.start + years) ? p._a : 0), 0);
+      const activeNow = active.filter(p => t >= p.start && t < p.start + years);
+      const gross = activeNow.reduce((s, p) => s + p._a, 0);
       if (gross <= 0) continue;
-      const tax = taxSEK(country, gross, married);
+      const tax = yearTax(country, activeNow, married);
       netTotal += gross - tax - ins;
       taxTotal += tax; grossTotal += gross; payoutYears++;
     }
@@ -357,10 +401,10 @@
     const age = parseInt(document.getElementById('age').value) || 0;
     const g = (parseFloat(document.getElementById('growth').value) || 0) / 100;
     const pensions = [
-      { amt: val('alp'), start: parseInt(document.getElementById('alp_age').value) || 0 },
-      { amt: val('tpo'), start: parseInt(document.getElementById('tpo_age').value) || 0 },
-      { amt: val('tpp'), start: parseInt(document.getElementById('tpp_age').value) || 0 },
-      { amt: val('prp'), start: parseInt(document.getElementById('prp_age').value) || 0 },
+      { key:'alp', amt: val('alp'), start: parseInt(document.getElementById('alp_age').value) || 0 },
+      { key:'tpo', amt: val('tpo'), start: parseInt(document.getElementById('tpo_age').value) || 0 },
+      { key:'tpp', amt: val('tpp'), start: parseInt(document.getElementById('tpp_age').value) || 0 },
+      { key:'prp', amt: val('prp'), start: parseInt(document.getElementById('prp_age').value) || 0 },
     ];
 
     // Validera startåldrar mot lägsta uttagsålder
@@ -408,6 +452,8 @@
       }).join('');
       return `<tr${isSE ? ' style="background:#f2fbf9"' : ''}><td class="flag">${c}${isSE ? ' <span class="tag" style="background:#d8f0ea;color:#1f6a5a">referens</span>' : ''}</td>${cells}</tr>`;
     }).join('');
+
+    renderChart(pensions, married, chosen, g);
 
     document.getElementById('view-input').classList.add('hidden');
     document.getElementById('view-result').classList.remove('hidden');
