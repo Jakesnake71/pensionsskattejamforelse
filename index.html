@@ -228,7 +228,7 @@
       <strong>Cypern, osäkerhet i tolkningen:</strong> beräkningen följer skatteavtalets huvudregel att privat tjänstepension och privat pension beskattas i Cypern. Skatterättsnämnden har dock i enskilda fall bedömt att Sverige som källstat får beskatta svensk privat pension. Stäm av med Skatteverket för ditt specifika fall.
     </div>
     <blockquote class="disclaimer">
-      <strong>Observera.</strong> Översiktlig uppskattning som beslutsstöd, inte skatterådgivning. Skatteskalorna bygger på 2025 års satser och är förenklade (grundavdrag och avdrag är schabloner, solidaritetstillägg utelämnas). Belopp i euro och baht räknas om med EUR ca 11,04 och THB ca 0,29 kr. Sverige avser kvarboende pensionär. Flyttar man ut och tar ut pensionen som begränsat skattskyldig gäller i stället SINK, 22,5 procent. Italien avser den särskilda 7-procentsregeln för utländska pensionärer som flyttar till mindre orter i södra Italien (tidsbegränsad). Utbetalningen modelleras som en annuitet, där kvarvarande kapital växer med angiven värdeutveckling, vilket gör att totalt utbetalt belopp överstiger det inmatade kapitalet. Skatteavtalens beskattningsrätt tillämpas per pensionstyp: offentlig tjänstepension beskattas i Sverige (SINK), och pensioner som får beskattas i båda länderna hanteras med avräkning. Denna fördelning är en förenkling som måste stämmas av mot avtalstexten i det enskilda fallet. Alla värden ska verifieras mot respektive lands regler.
+      <strong>Observera.</strong> Översiktlig uppskattning som beslutsstöd, inte skatterådgivning. Skatteskalorna bygger på 2025 års satser och är förenklade (grundavdrag och avdrag är schabloner, solidaritetstillägg utelämnas). Belopp i euro och baht räknas om med EUR ca 11,04 och THB ca 0,29 kr. Sverige avser kvarboende pensionär. Flyttar man ut och tar ut pensionen som begränsat skattskyldig gäller i stället SINK, 22,5 procent. Italien avser den särskilda 7-procentsregeln för utländska pensionärer som flyttar till mindre orter i södra Italien (tidsbegränsad). Utbetalningen modelleras som en annuitet, där kvarvarande kapital växer med angiven värdeutveckling, vilket gör att totalt utbetalt belopp överstiger det inmatade kapitalet. Skjuter du upp uttaget av en pension efter pensionsåldern växer kapitalet med sparavkastningen under uppskovet innan uttaget börjar. Skatteavtalens beskattningsrätt tillämpas per pensionstyp: offentlig tjänstepension beskattas i Sverige (SINK), och pensioner som får beskattas i båda länderna hanteras med avräkning. Denna fördelning är en förenkling som måste stämmas av mot avtalstexten i det enskilda fallet. Alla värden ska verifieras mot respektive lands regler.
     </blockquote>
 
     <div class="card">
@@ -364,7 +364,7 @@
   function outcome(country, pensions, years, married, g){
     const active = pensions.filter(p => p.amt > 0);
     if (!active.length || years <= 0) return { netMonth: 0, eff: 0, netTotal: 0, payoutYears: 0 };
-    active.forEach(p => { p._a = annuity(p.amt, years, g); });
+    active.forEach(p => { p._a = annuity(p.defAmt != null ? p.defAmt : p.amt, years, g); });
     const startMin = Math.min(...active.map(p => p.start));
     const endMax = Math.max(...active.map(p => p.start + years));
     const ins = RULES[country].ins;
@@ -398,7 +398,7 @@
     const active = pensions.filter(p => p.amt > 0);
     const head = document.getElementById('yearhead'), body = document.getElementById('yearrows');
     if (!active.length) { head.innerHTML = ''; body.innerHTML = ''; return; }
-    active.forEach(p => { p._a = annuity(p.amt, years, g); });
+    active.forEach(p => { p._a = annuity(p.defAmt != null ? p.defAmt : p.amt, years, g); });
     const lands = ["Sverige", ...chosen];
     const startMin = Math.min(...active.map(p => p.start));
     const endMax = Math.max(...active.map(p => p.start + years));
@@ -542,6 +542,10 @@
       { key:'tpp', amt: val('tpp'), start: parseInt(document.getElementById('tpp_age').value) || 0 },
       { key:'prp', amt: val('prp'), start: parseInt(document.getElementById('prp_age').value) || 0 },
     ];
+    // Uppskovstillväxt: kapitalet växer med sparavkastningen från pensionsåldern fram till uttagets start
+    const retireAge = parseInt(document.getElementById('retire_age').value) || 0;
+    const accR = (parseFloat(document.getElementById('acc_return').value) || 0) / 100;
+    pensions.forEach(p => { p.defAmt = p.amt * Math.pow(1 + accR, Math.max(0, p.start - retireAge)); });
 
     // Validera startåldrar mot lägsta uttagsålder
     const warnings = [];
