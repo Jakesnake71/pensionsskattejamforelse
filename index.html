@@ -374,6 +374,8 @@
     const endMax = Math.max(...active.map(p => p.start + years));
     head.innerHTML = '<tr><th>Ålder</th><th>Brutto/år</th>' + lands.map(c => `<th>${c}</th>`).join('') + '</tr>';
     let rows = '';
+    let grossSum = 0;
+    const netSum = lands.map(() => 0);
     for (let t = startMin; t < endMax; t++){
       const activeNow = active.filter(p => t >= p.start && t < p.start + years);
       const gross = activeNow.reduce((s, p) => s + p._a, 0);
@@ -382,7 +384,12 @@
       const best = Math.max(...nets);
       const cells = nets.map(n => `<td class="${Math.abs(n - best) < 1 ? 'best' : ''}">${fmt(n)}</td>`).join('');
       rows += `<tr><td class="flag">${t} år</td><td>${fmt(gross)}</td>${cells}</tr>`;
+      grossSum += gross;
+      nets.forEach((n, i) => { netSum[i] += n; });
     }
+    const bestTot = Math.max(...netSum);
+    const sumCells = netSum.map(n => `<td class="net ${Math.abs(n - bestTot) < 1 ? 'best' : ''}">${fmt(n)}</td>`).join('');
+    rows += `<tr style="border-top:2px solid var(--line)"><td class="flag">Totalt</td><td class="net">${fmt(grossSum)}</td>${sumCells}</tr>`;
     body.innerHTML = rows;
   }
   document.querySelectorAll('#yearperiod label').forEach(l => l.addEventListener('click', () => {
