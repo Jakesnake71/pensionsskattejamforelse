@@ -199,7 +199,7 @@
     </blockquote>
 
     <div class="card">
-      <h2>Nettobelopp per månad beroende på uttagsperiod</h2>
+      <h2>Nettobelopp beroende på uttagsperiod</h2>
       <p class="sub" id="assum"></p>
       <table>
         <thead>
@@ -207,7 +207,7 @@
         </thead>
         <tbody id="rows"></tbody>
       </table>
-      <p class="note">Varje pension betalas ut från sin egen startålder, och skatten beräknas på den sammanlagda årsinkomsten varje år enligt skatteavtalens beskattningsrätt per pensionstyp. Offentlig tjänstepension beskattas i Sverige (SINK), övriga typer i landet eller i båda med avräkning. Cellen visar genomsnittligt nettobelopp per månad, effektiv skatt och skillnad mot Sverige. Thailand belastas med sjukförsäkring, eftersom landet ligger utanför EU/EES.</p>
+      <p class="note">Varje pension betalas ut från sin egen startålder, och skatten beräknas på den sammanlagda årsinkomsten varje år enligt skatteavtalens beskattningsrätt per pensionstyp. Offentlig tjänstepension beskattas i Sverige (SINK), övriga typer i landet eller i båda med avräkning. Cellen visar genomsnittligt nettobelopp per månad, per år och totalt över utbetalningstiden, plus effektiv skatt och skillnad mot Sverige. Thailand belastas med sjukförsäkring, eftersom landet ligger utanför EU/EES.</p>
     </div>
 
     <div class="card">
@@ -443,12 +443,14 @@
       const cells = PERIODS.map(y => {
         const o = outcome(c, pensions, y, married, g);
         const isBest = Math.abs(o.netMonth - bestPer[y]) < 1;
-        const month = o.netMonth;
+        const perYear = o.payoutYears ? o.netTotal / o.payoutYears : 0;
         const diff = o.netMonth - seMonth[y];
         const diffLine = isSE
           ? '<div class="eff">referens</div>'
           : `<div class="eff" style="color:${diff >= 0 ? '#257953' : '#b03636'}">${diff >= 0 ? '+' : ''}${fmt(diff)}/mån mot Sverige</div>`;
-        return `<td class="net ${isBest ? 'best' : ''}">${fmt(month)}/mån${isBest ? ' <span class="tag">bäst</span>' : ''}<div class="eff">eff. skatt ${pct(o.eff)}</div>${diffLine}</td>`;
+        return `<td class="net ${isBest ? 'best' : ''}">${fmt(o.netMonth)}/mån${isBest ? ' <span class="tag">bäst</span>' : ''}`
+          + `<div class="eff">${fmt(perYear)}/år · ${fmt(o.netTotal)} totalt</div>`
+          + `<div class="eff">eff. skatt ${pct(o.eff)}</div>${diffLine}</td>`;
       }).join('');
       return `<tr${isSE ? ' style="background:#f2fbf9"' : ''}><td class="flag">${c}${isSE ? ' <span class="tag" style="background:#d8f0ea;color:#1f6a5a">referens</span>' : ''}</td>${cells}</tr>`;
     }).join('');
