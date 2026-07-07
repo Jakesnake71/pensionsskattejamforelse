@@ -38,6 +38,14 @@ Alternativ B, manuellt:
 3. Build Command lämnas tomt, Publish Directory sätts till `.`
 4. Create Static Site.
 
+## Publicera på GitHub Pages (utan Render)
+
+Repot innehåller ett arbetsflöde (`.github/workflows/pages.yml`) som publicerar sidan automatiskt.
+
+1. Efter push, gå till repots Settings, sedan Pages.
+2. Under Build and deployment, välj Source: GitHub Actions.
+3. Nästa push till `main` publicerar sidan på `https://DITT-KONTO.github.io/pensionsskattejamforelse/`.
+
 ## Innehåll
 
 - `index.html` – hela appen (inmatning, beräkning, resultat).
