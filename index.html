@@ -152,6 +152,10 @@
         <label class="fld"><span class="lab">Insättning per månad <span class="hint">kr</span></span><input type="text" inputmode="numeric" class="amount acc" id="prp_month" value="1 000"></label>
       </div>
       <p class="note" id="accsummary"></p>
+      <details style="margin-top:8px">
+        <summary style="cursor:pointer;font-size:13px;color:var(--primary);font-weight:700">Visa hur kapitalet växer år för år</summary>
+        <div style="overflow-x:auto;margin-top:12px"><table><thead id="accgrowthhead"></thead><tbody id="accgrowth"></tbody></table></div>
+      </details>
       <p class="note">Allmän pension bygger på en schablon: 18,5 % av lön upp till taket (7,5 inkomstbasbelopp). Offentlig tjänstepension beskattas i Sverige även vid utflyttning, medan privat tjänstepension följer respektive lands avtal.</p>
     </div>
 
@@ -479,10 +483,29 @@
     const tpp = fvLump(val('tpp_bal'), r, n) + fvStream(val('tpp_month') * 12, r, n);
     const prp = fvLump(val('prp_bal'), r, n) + fvStream(val('prp_month') * 12, r, n);
     setAmount('alp', alp); setAmount('tpo', tpo); setAmount('tpp', tpp); setAmount('prp', prp);
+    renderGrowth(age, retire, r, {
+      alp: { bal: val('alp_bal'), c: alpContribAnnual },
+      tpo: { bal: val('tpo_bal'), c: val('tpo_month') * 12 },
+      tpp: { bal: val('tpp_bal'), c: val('tpp_month') * 12 },
+      prp: { bal: val('prp_bal'), c: val('prp_month') * 12 },
+    });
     const s = document.getElementById('accsummary');
     s.textContent = n > 0
       ? `Vid ${retire} år (om ${n} år, ${(r*100).toFixed(1).replace('.', ',')} % avkastning): allmän ${fmt(alp)}, tjänstepension offentlig ${fmt(tpo)}, privat ${fmt(tpp)}, privat pension ${fmt(prp)}.`
       : "Pensionsålder måste vara högre än din nuvarande ålder.";
+  }
+  function renderGrowth(age, retire, r, parts) {
+    const head = document.getElementById('accgrowthhead'), body = document.getElementById('accgrowth');
+    const n = Math.max(0, retire - age);
+    head.innerHTML = '<tr><th>Ålder</th><th>Allmän</th><th>Tj. offentlig</th><th>Tj. privat</th><th>Privat</th><th>Totalt</th></tr>';
+    const bal = { alp: parts.alp.bal, tpo: parts.tpo.bal, tpp: parts.tpp.bal, prp: parts.prp.bal };
+    let rows = '';
+    for (let t = 0; t <= n; t++){
+      if (t > 0) ['alp', 'tpo', 'tpp', 'prp'].forEach(k => { bal[k] = bal[k] * (1 + r) + parts[k].c; });
+      const tot = bal.alp + bal.tpo + bal.tpp + bal.prp;
+      rows += `<tr><td class="flag">${age + t} år</td><td>${fmt(bal.alp)}</td><td>${fmt(bal.tpo)}</td><td>${fmt(bal.tpp)}</td><td>${fmt(bal.prp)}</td><td class="net">${fmt(tot)}</td></tr>`;
+    }
+    body.innerHTML = rows;
   }
   document.querySelectorAll('.acc').forEach(el => el.addEventListener('input', projectCapital));
 
