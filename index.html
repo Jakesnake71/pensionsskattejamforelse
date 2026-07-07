@@ -127,9 +127,10 @@
       <h2>Steg 0 – beräkna ditt pensionskapital (valfritt)</h2>
       <p class="sub">Uppskatta hur mycket kapital du har vid pension. Resultatet fyller automatiskt i de totala beloppen nedan.</p>
       <div class="grid2" style="max-width:520px">
-        <label class="fld"><span class="lab">Pensionsålder <span class="hint">år</span></span><input type="number" class="acc" id="retire_age" value="66" min="55" max="75"></label>
-        <label class="fld"><span class="lab">Förväntad avkastning under sparandet <span class="hint">% per år</span></span><input type="number" class="acc" id="acc_return" value="5" step="0.5"></label>
+        <label class="fld"><span class="lab">Din ålder idag <span class="hint">år (40–100)</span></span><input type="number" class="acc" id="age" value="55" min="40" max="100"></label>
+        <label class="fld"><span class="lab">Önskad pensionsålder <span class="hint">år, grund för beräkningen</span></span><input type="number" class="acc" id="retire_age" value="66" min="55" max="75"></label>
       </div>
+      <label class="fld" style="max-width:250px"><span class="lab">Förväntad avkastning under sparandet <span class="hint">% per år</span></span><input type="number" class="acc" id="acc_return" value="5" step="0.5"></label>
       <p style="font-weight:700;color:var(--text-dark);margin:6px 0 8px;font-size:13.5px">Allmän pension</p>
       <div class="grid2" style="max-width:520px">
         <label class="fld"><span class="lab">Nuvarande värde <span class="hint">kr</span></span><input type="text" inputmode="numeric" class="amount acc" id="alp_bal" value="800 000"></label>
@@ -156,17 +157,11 @@
 
     <div class="card">
       <h2>Dina uppgifter</h2>
-      <p class="sub">Ange din ålder, totala belopp per pensionstyp och när du planerar att börja ta ut respektive pension.</p>
-      <div class="grid2" style="max-width:440px">
-        <label class="fld">
-          <span class="lab">Din ålder idag <span class="hint">år (40–100)</span></span>
-          <input type="number" id="age" value="63" min="40" max="100">
-        </label>
-        <label class="fld">
-          <span class="lab">Värdeutveckling under utbetalning <span class="hint">% per år</span></span>
-          <input type="number" id="growth" value="5" step="0.5">
-        </label>
-      </div>
+      <p class="sub">Beloppen kommer från Steg 0 men kan ändras. Startåldern utgår från din önskade pensionsålder och kan justeras per pensionstyp.</p>
+      <label class="fld" style="max-width:250px">
+        <span class="lab">Värdeutveckling under utbetalning <span class="hint">% per år</span></span>
+        <input type="number" id="growth" value="5" step="0.5">
+      </label>
 
       <div class="ptable">
         <div class="phead"><span>Pensionstyp</span><span>Totalt belopp (kr)</span><span>Startålder för uttag</span></div>
@@ -490,7 +485,16 @@
       : "Pensionsålder måste vara högre än din nuvarande ålder.";
   }
   document.querySelectorAll('.acc').forEach(el => el.addEventListener('input', projectCapital));
-  document.getElementById('age').addEventListener('input', projectCapital);
+
+  // Startåldrar per pensionstyp utgår från önskad pensionsålder (kan sedan ändras)
+  function syncStartAges() {
+    const retire = parseInt(document.getElementById('retire_age').value) || 0;
+    const set = (id, min) => { document.getElementById(id).value = Math.max(min, retire || min); };
+    set('alp_age', 64); set('tpo_age', 55); set('tpp_age', 55); set('prp_age', 55);
+    validateAges();
+  }
+  document.getElementById('retire_age').addEventListener('input', syncStartAges);
+  syncStartAges();
   projectCapital();
 
   function compare() {
