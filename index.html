@@ -49,11 +49,12 @@
   h2 { color: var(--text-dark); font-size: 20px; margin: 0 0 4px; font-weight: 700; }
   .sub { font-size: 14px; color: var(--muted); margin: 0 0 20px; }
 
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 26px; }
+  .grid2 { display: grid; grid-template-columns: 250px 250px; gap: 14px 26px; }
   label.fld { display: block; margin-bottom: 16px; }
-  label.fld .lab { font-size: 13.5px; font-weight: 700; color: var(--text-dark); margin-bottom: 6px; display:flex; gap:6px; align-items:baseline; }
+  label.fld .lab { font-size: 13.5px; font-weight: 700; color: var(--text-dark); margin-bottom: 6px; display:flex; flex-wrap:wrap; gap:2px 6px; align-items:baseline; }
   label.fld .hint { font-size: 11.5px; color: var(--muted); font-weight: 400; }
-  input[type=number] { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; font-family: inherit; font-size: 15px; color: var(--text-dark); }
+  input[type=number], input[type=text] { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; font-family: inherit; font-size: 15px; color: var(--text-dark); }
+  .grid2 input { width: 100%; }
   input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
   .radios { display: flex; gap: 10px; }
   .radios label { flex:1; border: 1px solid var(--line); border-radius: 4px; padding: 10px; text-align:center; font-size: 14px; cursor: pointer; }
@@ -96,6 +97,25 @@
   .warn { background:#fdeeee; border:1px solid #f3c6c6; color:#9a3131; border-radius:6px; padding:12px 14px; font-size:13px; margin:14px 0 0; }
   .warn ul { margin:6px 0 0; padding-left:18px; }
   input.invalid { border-color:#d0403f !important; box-shadow:0 0 0 3px #fdeeee; background:#fff7f7; }
+
+  /* Responsivt: mobil */
+  @media (max-width: 640px) {
+    .navbar { height: auto; flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px 18px; }
+    .navbar .links { flex-wrap: wrap; }
+    .navbar .links a { padding: 6px 10px; font-size: 14px; }
+    .hero { padding: 24px 18px; }
+    .hero h1 { font-size: 24px; }
+    .wrap { padding: 20px 16px 60px; }
+    .card { padding: 18px 16px; }
+    /* Formulärpar staplas på smala skärmar */
+    .grid2 { grid-template-columns: 1fr; }
+    /* Beloppstabellen: namnet på egen rad, inputfälten i två kolumner under */
+    .phead, .prow { grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+    .phead span:first-child, .prow .pname { grid-column: 1 / -1; margin-bottom: 2px; }
+    /* Tabeller får horisontell scroll i stället för att tryckas ihop */
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .table-scroll table { min-width: 520px; }
+  }
 </style>
 </head>
 <body>
@@ -126,11 +146,11 @@
     <div class="card">
       <h2>Steg 0 – beräkna ditt pensionskapital (valfritt)</h2>
       <p class="sub">Uppskatta hur mycket kapital du har vid pension. Resultatet fyller automatiskt i de totala beloppen nedan.</p>
-      <div class="grid2" style="max-width:520px">
+      <div style="max-width:250px">
         <label class="fld"><span class="lab">Din ålder idag <span class="hint">år (40–100)</span></span><input type="number" class="acc" id="age" value="55" min="40" max="100"></label>
-        <label class="fld"><span class="lab">Önskad pensionsålder <span class="hint">år, grund för beräkningen</span></span><input type="number" class="acc" id="retire_age" value="66" min="55" max="75"></label>
+        <label class="fld"><span class="lab">Önskad pensionsålder <span class="hint">år</span></span><input type="number" class="acc" id="retire_age" value="66" min="55" max="75"></label>
       </div>
-      <label class="fld" style="max-width:250px"><span class="lab">Förväntad avkastning under sparandet <span class="hint">% per år</span></span><input type="number" class="acc" id="acc_return" value="5" step="0.5"></label>
+      <label class="fld" style="max-width:400px"><span class="lab">Förväntad avkastning under sparandet <span class="hint">% per år</span></span><input type="number" class="acc" id="acc_return" value="5" step="0.5" style="max-width:250px"></label>
       <p style="font-weight:700;color:var(--text-dark);margin:6px 0 8px;font-size:13.5px">Allmän pension</p>
       <div class="grid2" style="max-width:520px">
         <label class="fld"><span class="lab">Nuvarande värde <span class="hint">kr</span></span><input type="text" inputmode="numeric" class="amount acc" id="alp_bal" value="800 000"></label>
@@ -154,7 +174,7 @@
       <p class="note" id="accsummary"></p>
       <details style="margin-top:8px">
         <summary style="cursor:pointer;font-size:13px;color:var(--primary);font-weight:700">Visa hur kapitalet växer år för år</summary>
-        <div style="overflow-x:auto;margin-top:12px"><table><thead id="accgrowthhead"></thead><tbody id="accgrowth"></tbody></table></div>
+        <div class="table-scroll" style="overflow-x:auto;margin-top:12px"><table><thead id="accgrowthhead"></thead><tbody id="accgrowth"></tbody></table></div>
       </details>
       <p class="note">Allmän pension bygger på en schablon: 18,5 % av lön upp till taket (7,5 inkomstbasbelopp). Offentlig tjänstepension beskattas i Sverige även vid utflyttning, medan privat tjänstepension följer respektive lands avtal.</p>
     </div>
@@ -162,9 +182,9 @@
     <div class="card">
       <h2>Dina uppgifter</h2>
       <p class="sub">Beloppen kommer från Steg 0 men kan ändras. Startåldern utgår från din önskade pensionsålder och kan justeras per pensionstyp.</p>
-      <label class="fld" style="max-width:250px">
+      <label class="fld" style="max-width:400px">
         <span class="lab">Värdeutveckling under utbetalning <span class="hint">% per år</span></span>
-        <input type="number" id="growth" value="5" step="0.5">
+        <input type="number" id="growth" value="5" step="0.5" style="max-width:250px">
       </label>
 
       <div class="ptable">
@@ -205,13 +225,13 @@
       <h2>Länder att jämföra mot Sverige</h2>
       <p class="sub">Välj ett eller flera länder.</p>
       <div class="countries" id="countries">
-        <label class="on" data-c="Portugal"><input type="checkbox" checked>Portugal</label>
+        <label data-c="Portugal"><input type="checkbox">Portugal</label>
         <label class="on" data-c="Spanien"><input type="checkbox" checked>Spanien</label>
         <label class="on" data-c="Frankrike"><input type="checkbox" checked>Frankrike</label>
-        <label data-c="Cypern"><input type="checkbox">Cypern</label>
+        <label class="on" data-c="Cypern"><input type="checkbox" checked>Cypern</label>
         <label data-c="Malta"><input type="checkbox">Malta</label>
-        <label data-c="Italien"><input type="checkbox">Italien</label>
-        <label class="on" data-c="Thailand"><input type="checkbox" checked>Thailand</label>
+        <label class="on" data-c="Italien"><input type="checkbox" checked>Italien</label>
+        <label data-c="Thailand"><input type="checkbox">Thailand</label>
       </div>
       <div id="inputwarn" class="warn hidden"></div>
       <div class="actions">
@@ -234,12 +254,12 @@
     <div class="card">
       <h2>Nettobelopp beroende på uttagsperiod</h2>
       <p class="sub" id="assum"></p>
-      <table>
+      <div class="table-scroll"><table>
         <thead>
           <tr><th>Land</th><th>Uttag 5 år</th><th>Uttag 10 år</th><th>Uttag 20 år</th></tr>
         </thead>
         <tbody id="rows"></tbody>
-      </table>
+      </table></div>
       <p class="note">Varje pension betalas ut från sin egen startålder, och skatten beräknas på den sammanlagda årsinkomsten varje år enligt skatteavtalens beskattningsrätt per pensionstyp. Offentlig tjänstepension beskattas i Sverige (SINK), övriga typer i landet eller i båda med avräkning. Cellen visar totalt netto över hela utbetalningstiden, plus genomsnittligt netto per månad och skillnad mot Sverige. Eftersom pensionerna startar vid olika åldrar kan utbetalningen sträcka sig över fler år än den valda uttagsperioden, och antalet faktiska utbetalningsår står i cellen. Thailand belastas med sjukförsäkring, eftersom landet ligger utanför EU/EES.</p>
     </div>
 
@@ -251,7 +271,7 @@
         <label data-v="10"><input type="radio" name="yearperiod" value="10">10 år</label>
         <label data-v="20" class="on"><input type="radio" name="yearperiod" value="20" checked>20 år</label>
       </div>
-      <div style="overflow-x:auto"><table id="yeartable"><thead id="yearhead"></thead><tbody id="yearrows"></tbody></table></div>
+      <div class="table-scroll" style="overflow-x:auto"><table id="yeartable"><thead id="yearhead"></thead><tbody id="yearrows"></tbody></table></div>
       <p class="note">Bruttobeloppet är summan av de pensioner som betalas ut just det året, utifrån vald uttagsperiod. Nettot är efter skatt och, utanför EU/EES, sjukförsäkring.</p>
     </div>
 
